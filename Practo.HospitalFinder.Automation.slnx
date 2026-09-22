@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Practo.HospitalFinder.Playwright/Practo.HospitalFinder.Playwright.csproj" />
+  <Project Path="Practo.HospitalFinder.SeleniumBDD/Practo.HospitalFinder.SeleniumBDD.csproj" />
 </Solution>
