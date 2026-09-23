@@ -13,7 +13,11 @@ public class HospitalSearchPage
 
     public async Task NavigateToBangaloreHospitalsAsync()
     {
-        await _page.GotoAsync(
-            "https://www.practo.com/bangalore/hospitals");
+        await _page.GotoAsync("https://www.practo.com/bangalore/hospitals");
+    }
+
+    public async Task<int> GetHospitalCountAsync()
+    {
+        return await _page.Locator(".c-estb-card").CountAsync();
     }
 }
