@@ -95,4 +95,16 @@ public class HospitalSearchPage
 
         return results;
     }
+
+    public async Task<List<HospitalResult>> GetCandidateHospitalsAsync()
+    {
+        var hospitals = await GetHospitalResultsAsync();
+
+        return hospitals
+            .Where(hospital =>
+                hospital.IsOpen24x7 &&
+                hospital.Rating.HasValue &&
+                hospital.Rating.Value > 3.5)
+            .ToList();
+    }
 }

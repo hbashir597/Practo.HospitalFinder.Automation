@@ -61,4 +61,39 @@ public class HospitalSearchTests : PageTest
                 $"URL: {hospital.DetailsUrl}");
         }
     }
+
+    [Test]
+    public async Task BangaloreHospitalSearchFiltersCandidateHospitals()
+    {
+        var hospitalSearchPage = new HospitalSearchPage(Page);
+
+        await hospitalSearchPage.NavigateToBangaloreHospitalsAsync();
+
+        var candidates =
+            await hospitalSearchPage.GetCandidateHospitalsAsync();
+
+        Assert.That(
+            candidates,
+            Is.Not.Empty,
+            "Expected at least one hospital to meet the rating and 24x7 criteria.");
+
+        foreach (var hospital in candidates)
+        {
+            Console.WriteLine(
+                $"Candidate: {hospital.Name} | " +
+                $"Rating: {hospital.Rating} | " +
+                $"Open 24x7: {hospital.IsOpen24x7}");
+
+            Assert.That(
+                hospital.IsOpen24x7,
+                Is.True);
+
+            Assert.That(
+                hospital.Rating,
+                Is.GreaterThan(3.5));
+        }
+
+        Console.WriteLine(
+            $"Total candidate hospitals: {candidates.Count}");
+    }
 }
