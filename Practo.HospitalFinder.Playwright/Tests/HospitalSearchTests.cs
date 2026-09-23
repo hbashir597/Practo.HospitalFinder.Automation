@@ -36,4 +36,29 @@ public class HospitalSearchTests : PageTest
             Is.GreaterThan(0),
             "Expected at least one hospital card to be displayed.");
     }
+
+    [Test]
+    public async Task BangaloreHospitalSearchExtractsHospitalInformation()
+    {
+        var hospitalSearchPage = new HospitalSearchPage(Page);
+
+        await hospitalSearchPage.NavigateToBangaloreHospitalsAsync();
+
+        var hospitals =
+            await hospitalSearchPage.GetHospitalResultsAsync();
+
+        Assert.That(
+            hospitals,
+            Is.Not.Empty,
+            "Expected hospital information to be extracted.");
+
+        foreach (var hospital in hospitals)
+        {
+            Console.WriteLine(
+                $"Name: {hospital.Name} | " +
+                $"Rating: {hospital.Rating} | " +
+                $"Open 24x7: {hospital.IsOpen24x7} | " +
+                $"URL: {hospital.DetailsUrl}");
+        }
+    }
 }
