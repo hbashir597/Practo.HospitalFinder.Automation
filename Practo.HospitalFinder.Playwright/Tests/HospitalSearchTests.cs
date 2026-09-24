@@ -1,12 +1,14 @@
-using Microsoft.Playwright.NUnit;
+using Allure.NUnit;
 using Practo.HospitalFinder.Playwright.Models;
 using Practo.HospitalFinder.Playwright.Pages;
+using Practo.HospitalFinder.Playwright.Support;
 using System.Text.RegularExpressions;
 
 namespace Practo.HospitalFinder.Playwright.Tests;
 
 [TestFixture]
-public class HospitalSearchTests : PageTest
+[AllureNUnit]
+public class HospitalSearchTests : BaseTest
 {
     [Test]
     public async Task BangaloreHospitalSearchPageLoads()
