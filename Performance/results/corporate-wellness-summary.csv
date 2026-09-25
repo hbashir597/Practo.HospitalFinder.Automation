@@ -1,0 +1,3 @@
+Label,# Samples,Average,Min,Max,Std. Dev.,Error %,Throughput,Received KB/sec,Sent KB/sec,Avg. Bytes
+Load Corporate Wellness Page,500,695,219,2402,339.97,0.000%,29.20902,3465.63,14.35,121496.8
+TOTAL,500,695,219,2402,339.97,0.000%,29.20902,3465.63,14.35,121496.8
