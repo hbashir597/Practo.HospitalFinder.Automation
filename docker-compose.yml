@@ -1,0 +1,16 @@
+services:
+  selenium-chrome:
+    image: selenium/standalone-chrome:latest
+    container_name: practo-selenium-grid
+
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+
+    shm_size: "2gb"
+
+    environment:
+      - SE_VNC_NO_PASSWORD=1
+      - SE_SCREEN_WIDTH=1920
+      - SE_SCREEN_HEIGHT=1080
+      - SE_NODE_SESSION_TIMEOUT=300
