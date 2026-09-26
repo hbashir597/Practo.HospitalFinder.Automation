@@ -1,6 +1,7 @@
 ﻿using Allure.Net.Commons;
 using OpenQA.Selenium;
 using Practo.HospitalFinder.SeleniumBDD.Drivers;
+using Practo.HospitalFinder.SeleniumBDD.Logging;
 using Reqnroll;
 
 namespace Practo.HospitalFinder.SeleniumBDD.Hooks;
@@ -15,13 +16,36 @@ public class Hooks
         _scenarioContext = scenarioContext;
     }
 
+    [BeforeTestRun]
+    public static void BeforeTestRun()
+    {
+        Logger.Initialise();
+
+        Logger.Info(
+            "BDD test run started");
+    }
+
+    [BeforeScenario]
+    public void BeforeScenario()
+    {
+        Logger.Info(
+            $"Starting scenario: " +
+            $"{_scenarioContext.ScenarioInfo.Title}");
+    }
+
     [BeforeScenario("@ui")]
     public void BeforeUiScenario()
     {
+        Logger.Info(
+            "Creating Selenium WebDriver");
+
         IWebDriver driver =
             DriverFactory.CreateDriver();
 
         _scenarioContext["WebDriver"] = driver;
+
+        Logger.Info(
+            "Selenium WebDriver created successfully");
     }
 
     [AfterScenario("@ui")]
@@ -32,6 +56,9 @@ public class Hooks
                 out IWebDriver? driver) ||
             driver is null)
         {
+            Logger.Info(
+                "No WebDriver was available for cleanup");
+
             return;
         }
 
@@ -39,13 +66,48 @@ public class Hooks
         {
             if (_scenarioContext.TestError is not null)
             {
+                Logger.Error(
+                    $"Scenario failed: " +
+                    $"{_scenarioContext.ScenarioInfo.Title}",
+                    _scenarioContext.TestError);
+
                 CaptureFailureScreenshot(driver);
             }
         }
         finally
         {
             driver.Quit();
+
+            Logger.Info(
+                "Selenium WebDriver closed");
         }
+    }
+
+    [AfterScenario]
+    public void AfterScenario()
+    {
+        if (_scenarioContext.TestError is null)
+        {
+            Logger.Info(
+                $"Scenario passed: " +
+                $"{_scenarioContext.ScenarioInfo.Title}");
+        }
+        else
+        {
+            Logger.Error(
+                $"Scenario completed with failure: " +
+                $"{_scenarioContext.ScenarioInfo.Title}",
+                _scenarioContext.TestError);
+        }
+    }
+
+    [AfterTestRun]
+    public static void AfterTestRun()
+    {
+        Logger.Info(
+            "BDD test run finished");
+
+        Logger.Close();
     }
 
     private void CaptureFailureScreenshot(
@@ -53,6 +115,9 @@ public class Hooks
     {
         if (driver is not ITakesScreenshot screenshotDriver)
         {
+            Logger.Info(
+                "WebDriver does not support screenshots");
+
             return;
         }
 
@@ -98,6 +163,10 @@ public class Hooks
             "Failure Screenshot",
             "image/png",
             screenshot.AsByteArray);
+
+        Logger.Info(
+            $"Failure screenshot saved: " +
+            $"{screenshotPath}");
 
         Console.WriteLine(
             $"Failure screenshot saved: " +
