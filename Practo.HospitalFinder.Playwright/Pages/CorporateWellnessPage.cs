@@ -14,7 +14,12 @@ public class CorporateWellnessPage
     public async Task NavigateAsync()
     {
         await _page.GotoAsync(
-            "https://www.practo.com/plus/corporate");
+            "https://www.practo.com/plus/corporate",
+            new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded,
+                Timeout = 30000
+            });
     }
 
     public async Task FillInvalidContactDetailsAsync(
@@ -45,7 +50,8 @@ public class CorporateWellnessPage
             _page.Locator(
                 "select#interestedIn:visible");
 
-        await name.FillAsync("Test");
+        await name.FillAsync(
+            "Test");
 
         await organisationName.FillAsync(
             "Test Organisation");
@@ -68,19 +74,26 @@ public class CorporateWellnessPage
                 Label = "Taking a demo"
             });
 
-        await officialEmail.PressAsync("Tab");
+        await officialEmail.PressAsync(
+            "Tab");
     }
 
-    public ILocator InvalidContactNumber =>
-        _page.Locator(
-            "input[placeholder='Contact Number'].corporate-form__input--error:visible");
-
-    public ILocator InvalidOfficialEmail =>
-        _page.Locator(
-            "input[placeholder='Official Email ID'].corporate-form__input--error:visible");
+    public ILocator ScheduleDemoHeading =>
+        _page.GetByRole(
+            AriaRole.Heading,
+            new()
+            {
+                Name = "Schedule a Demo",
+                Exact = true
+            })
+            .First;
 
     public ILocator ScheduleDemoButton =>
-        _page.Locator(
-            "button[type='submit']:visible")
-            .Filter(new() { HasText = "Schedule a demo" });
+        _page.GetByRole(
+            AriaRole.Button,
+            new()
+            {
+                Name = "Schedule a demo",
+                Exact = true
+            });
 }

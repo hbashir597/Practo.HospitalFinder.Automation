@@ -1,5 +1,6 @@
 ﻿using Allure.NUnit;
 using Deque.AxeCore.Playwright;
+using Practo.HospitalFinder.Playwright.Pages;
 using Practo.HospitalFinder.Playwright.Support;
 
 namespace Practo.HospitalFinder.Playwright.Tests;
@@ -9,17 +10,33 @@ namespace Practo.HospitalFinder.Playwright.Tests;
 public class AccessibilityTests : BaseTest
 {
     [Test]
-    public async Task HomepageAccessibilityScan()
+    public async Task DiagnosticsPageAccessibilityScan()
     {
-        await Page.GotoAsync(
-            "https://www.practo.com/");
+        var diagnosticsPage =
+            new DiagnosticsPage(Page);
+
+        await diagnosticsPage
+            .NavigateToDiagnosticsAsync();
+
+        await DismissConsentPopupIfPresentAsync();
+
+        TestContext.Out.WriteLine(
+            "Running axe accessibility scan...");
 
         var results =
             await Page.RunAxe();
 
+        Assert.That(
+            results,
+            Is.Not.Null,
+            "Expected axe to return accessibility scan results.");
+
         TestContext.Out.WriteLine(
-            $"Accessibility violations: " +
+            $"Accessibility violations found: " +
             $"{results.Violations.Length}");
+
+        TestContext.Out.WriteLine(
+            "========================================");
 
         foreach (var violation in results.Violations)
         {
@@ -36,23 +53,95 @@ public class AccessibilityTests : BaseTest
                 $"Help: {violation.Help}");
 
             TestContext.Out.WriteLine(
-                "--------------------------------");
+                "----------------------------------------");
         }
 
+        // Report all violations, but fail the quality
+        // gate for serious or critical findings.
+        var seriousOrCriticalViolations =
+            results.Violations
+                .Where(violation =>
+                {
+                    var impact =
+                        violation.Impact?.ToString();
+
+                    return string.Equals(
+                               impact,
+                               "serious",
+                               StringComparison.OrdinalIgnoreCase)
+                           ||
+                           string.Equals(
+                               impact,
+                               "critical",
+                               StringComparison.OrdinalIgnoreCase);
+                })
+                .ToList();
+
+        TestContext.Out.WriteLine(
+            $"Serious/Critical violations: " +
+            $"{seriousOrCriticalViolations.Count}");
+
+        TestContext.Out.WriteLine(
+            "Accessibility quality gate: " +
+            "Serious/Critical <= 0");
+
         Assert.That(
-            results,
-            Is.Not.Null);
+            seriousOrCriticalViolations,
+            Is.Empty,
+            "Accessibility quality gate failed: " +
+            "serious or critical violations were found.");
+
+        TestContext.Out.WriteLine(
+            "Accessibility quality gate passed.");
+
+        TestContext.Out.WriteLine(
+            "Accessibility scan completed successfully.");
     }
 
     [Test]
-    public async Task LocationSearchIsReachableByKeyboard()
+    public async Task CorporateWellnessFormHasLogicalKeyboardFocusOrder()
     {
-        await Page.GotoAsync(
-            "https://www.practo.com/");
+        var corporateWellnessPage =
+            new CorporateWellnessPage(Page);
 
-        const int maximumTabPresses = 15;
+        await corporateWellnessPage
+            .NavigateAsync();
 
-        var locationReached = false;
+        await DismissConsentPopupIfPresentAsync();
+
+        TestContext.Out.WriteLine(
+            "Starting keyboard focus-order accessibility test...");
+
+        // Make keyboard focus clearly visible when
+        // running the test in headed mode.
+        await Page.AddStyleTagAsync(
+            new()
+            {
+                Content =
+                    """
+                    *:focus {
+                        outline: 4px solid red !important;
+                        outline-offset: 4px !important;
+                    }
+                    """
+            });
+
+        // Expected logical order of the main form controls.
+        var expectedFocusOrder =
+            new[]
+            {
+                "name",
+                "organizationName",
+                "contactNumber",
+                "officialEmailId",
+                "organizationSize",
+                "interestedIn"
+            };
+
+        var actualFocusOrder =
+            new List<string>();
+
+        const int maximumTabPresses = 20;
 
         for (var tabNumber = 1;
              tabNumber <= maximumTabPresses;
@@ -73,8 +162,9 @@ public class AccessibilityTests : BaseTest
 
                         return [
                             element.tagName,
-                            element.getAttribute("href") ?? "",
+                            element.getAttribute("type") ?? "",
                             element.getAttribute("placeholder") ?? "",
+                            element.id ?? "",
                             element.textContent?.trim() ?? ""
                         ]
                         .filter(Boolean)
@@ -83,38 +173,66 @@ public class AccessibilityTests : BaseTest
                     """);
 
             TestContext.Out.WriteLine(
-                $"Tab {tabNumber}: " +
-                $"{focusedElement}");
+                $"Tab {tabNumber}: {focusedElement}");
 
-            var locationIsFocused =
-                await Page.EvaluateAsync<bool>(
+            var focusedElementId =
+                await Page.EvaluateAsync<string>(
                     """
                     () => {
                         const element =
                             document.activeElement;
 
-                        return element?.getAttribute(
-                            "data-qa-id") ===
-                            "omni-searchbox-locality";
+                        return element?.id ?? "";
                     }
                     """);
 
-            if (locationIsFocused)
+            if (expectedFocusOrder.Contains(focusedElementId) &&
+                !actualFocusOrder.Contains(focusedElementId))
             {
-                locationReached = true;
+                actualFocusOrder.Add(
+                    focusedElementId);
 
                 TestContext.Out.WriteLine(
-                    "Location field reached " +
-                    "using keyboard.");
+                    $"Form control reached: " +
+                    $"{focusedElementId}");
+            }
 
+            if (actualFocusOrder.Count ==
+                expectedFocusOrder.Length)
+            {
                 break;
             }
         }
 
+        TestContext.Out.WriteLine(
+            "========================================");
+
+        TestContext.Out.WriteLine(
+            "Expected focus order:");
+
+        foreach (var control in expectedFocusOrder)
+        {
+            TestContext.Out.WriteLine(
+                $"  {control}");
+        }
+
+        TestContext.Out.WriteLine(
+            "Actual focus order:");
+
+        foreach (var control in actualFocusOrder)
+        {
+            TestContext.Out.WriteLine(
+                $"  {control}");
+        }
+
         Assert.That(
-            locationReached,
-            Is.True,
-            "The location search field could not " +
-            "be reached using keyboard navigation.");
+            actualFocusOrder,
+            Is.EqualTo(expectedFocusOrder),
+            "The Corporate Wellness form controls " +
+            "were not reached in the expected " +
+            "keyboard focus order.");
+
+        TestContext.Out.WriteLine(
+            "Keyboard focus order verified successfully.");
     }
 }

@@ -1,18 +1,25 @@
-﻿using Microsoft.Playwright;
-using Microsoft.Playwright.NUnit;
+﻿using Practo.HospitalFinder.Playwright.Support;
 using System.Text.RegularExpressions;
 
 namespace Practo.HospitalFinder.Playwright;
 
 [TestFixture]
-public class PlaywrightSmokeTests : PageTest
+public class PlaywrightSmokeTests : BaseTest
 {
     [Test]
     public async Task PlaywrightCanOpenPractoHomepage()
     {
-        await Page.GotoAsync("https://www.practo.com/");
+        await Page.GotoAsync(
+            "https://www.practo.com/");
+
+        await DismissConsentPopupIfPresentAsync();
 
         await Expect(Page).ToHaveTitleAsync(
-            new Regex("Practo", RegexOptions.IgnoreCase));
+            new Regex(
+                "Practo",
+                RegexOptions.IgnoreCase));
+
+        TestContext.Out.WriteLine(
+            "Practo homepage loaded successfully.");
     }
 }

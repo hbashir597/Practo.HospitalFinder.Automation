@@ -17,8 +17,12 @@ public class DiagnosticsTests : BaseTest
 
         await diagnosticsPage.NavigateToDiagnosticsAsync();
 
+        await DismissConsentPopupIfPresentAsync();
+
         await Expect(Page).ToHaveURLAsync(
-            new Regex("/tests", RegexOptions.IgnoreCase));
+            new Regex(
+                "/tests",
+                RegexOptions.IgnoreCase));
     }
 
     [Test]
@@ -28,6 +32,8 @@ public class DiagnosticsTests : BaseTest
             new DiagnosticsPage(Page);
 
         await diagnosticsPage.NavigateToDiagnosticsAsync();
+
+        await DismissConsentPopupIfPresentAsync();
 
         List<string> topCities =
             await diagnosticsPage.GetTopCitiesAsync();

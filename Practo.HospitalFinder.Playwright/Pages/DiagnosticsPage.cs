@@ -14,7 +14,11 @@ public class DiagnosticsPage
     public async Task NavigateToDiagnosticsAsync()
     {
         await _page.GotoAsync(
-            "https://www.practo.com/tests");
+            "https://www.practo.com/tests",
+            new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
     }
 
     public async Task<List<string>> GetTopCitiesAsync()
@@ -24,8 +28,23 @@ public class DiagnosticsPage
                 "TOP CITIES",
                 new() { Exact = true });
 
+        await topCitiesHeading.WaitForAsync(
+            new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 15000
+            });
+
         var topCitiesList =
-            topCitiesHeading.Locator("xpath=following-sibling::ul[1]");
+            topCitiesHeading.Locator(
+                "xpath=following::ul[1]");
+
+        await topCitiesList.WaitForAsync(
+            new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 10000
+            });
 
         var cityItems =
             topCitiesList.Locator("li");

@@ -483,3 +483,17 @@ $RECYCLE.BIN/
 
 # Reqnroll generated feature code
 *.feature.cs
+
+# ============================================
+# Practo Hospital Finder - Generated Artefacts
+# ============================================
+
+# JMeter generated raw results and HTML dashboard
+Performance/results/*.jtl
+Performance/results/html-dashboard/
+
+# ZAP desktop-generated report assets
+Practo.HospitalFinder.Security/Reports/2026-*-ZAP-Report-*/
+
+# Local full test-run console output
+playwright-full-run.txt

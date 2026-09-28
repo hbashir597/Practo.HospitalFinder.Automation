@@ -1,4 +1,5 @@
 ﻿using Allure.Net.Commons;
+using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 using NUnit.Framework.Interfaces;
 
@@ -6,6 +7,44 @@ namespace Practo.HospitalFinder.Playwright.Support;
 
 public class BaseTest : PageTest
 {
+    public override BrowserNewContextOptions ContextOptions()
+    {
+        return new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize
+            {
+                Width = 1536,
+                Height = 864
+            }
+        };
+    }
+
+    protected async Task DismissConsentPopupIfPresentAsync()
+    {
+        var doNotConsentButton =
+            Page.Locator("button.fc-cta-do-not-consent");
+
+        try
+        {
+            await doNotConsentButton.WaitForAsync(
+                new LocatorWaitForOptions
+                {
+                    State = WaitForSelectorState.Visible,
+                    Timeout = 5000
+                });
+
+            await doNotConsentButton.ClickAsync();
+
+            TestContext.Out.WriteLine(
+                "Consent popup dismissed.");
+        }
+        catch (TimeoutException)
+        {
+            TestContext.Out.WriteLine(
+                "Consent popup not displayed.");
+        }
+    }
+
     [TearDown]
     public async Task CaptureFailureEvidenceAsync()
     {

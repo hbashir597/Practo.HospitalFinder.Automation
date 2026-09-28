@@ -6,9 +6,87 @@ public class HospitalDetailsPage
 {
     private readonly IPage _page;
 
+    private const string DoNotConsentSelector =
+        "button[aria-label='Do not consent']";
+
+    private const string ReadMoreInfoSelector =
+        "[data-qa-id='read_more_info']";
+
+    private const string AmenityItemSelector =
+        "[data-qa-id='amenity_item']";
+
     public HospitalDetailsPage(IPage page)
     {
         _page = page;
+    }
+
+    public async Task DismissConsentPopupIfPresentAsync()
+    {
+        var doNotConsentButton =
+            _page.Locator(DoNotConsentSelector);
+
+        try
+        {
+            await doNotConsentButton
+                .First
+                .WaitForAsync(
+                    new LocatorWaitForOptions
+                    {
+                        State = WaitForSelectorState.Visible,
+                        Timeout = 3000
+                    });
+
+            await doNotConsentButton
+                .First
+                .ClickAsync();
+
+            Console.WriteLine(
+                "Consent popup dismissed.");
+        }
+        catch (TimeoutException)
+        {
+            Console.WriteLine(
+                "Consent popup not displayed.");
+        }
+    }
+
+    public async Task ExpandHospitalInformationAsync()
+    {
+        await DismissConsentPopupIfPresentAsync();
+
+        var readMoreInfo =
+            _page.Locator(
+                ReadMoreInfoSelector);
+
+        await readMoreInfo
+            .First
+            .WaitForAsync(
+                new LocatorWaitForOptions
+                {
+                    State = WaitForSelectorState.Visible,
+                    Timeout = 10000
+                });
+
+        await readMoreInfo
+            .First
+            .ScrollIntoViewIfNeededAsync();
+
+        await readMoreInfo
+            .First
+            .ClickAsync();
+
+        await _page
+            .Locator(AmenityItemSelector)
+            .First
+            .WaitForAsync(
+                new LocatorWaitForOptions
+                {
+                    State = WaitForSelectorState.Visible,
+                    Timeout = 10000
+                });
+
+        Console.WriteLine(
+            "Hospital information expanded.");
     }
 
     public async Task<bool> HasParkingAsync()
@@ -16,30 +94,62 @@ public class HospitalDetailsPage
         await _page.WaitForLoadStateAsync(
             LoadState.DOMContentLoaded);
 
-        var readMoreInfo =
-            _page.GetByText(
-                "Read more info",
-                new() { Exact = true });
+        string title =
+            await _page.TitleAsync();
 
-        if (await readMoreInfo.CountAsync() > 0 &&
-            await readMoreInfo.First.IsVisibleAsync())
+        Console.WriteLine(
+            $"Hospital details URL: {_page.Url}");
+
+        Console.WriteLine(
+            $"Hospital details title: {title}");
+
+        if (title.Contains(
+                "Challenge Validation",
+                StringComparison.OrdinalIgnoreCase))
         {
-            await readMoreInfo.First.ClickAsync();
+            throw new InvalidOperationException(
+                "Practo returned its Challenge Validation page " +
+                "instead of the hospital details page.");
         }
 
-        var amenitiesList =
-            _page.Locator("[data-qa-id='amenities_list']");
+        await ExpandHospitalInformationAsync();
 
-        if (await amenitiesList.CountAsync() == 0)
+        var amenities =
+            _page.Locator(
+                AmenityItemSelector);
+
+        int amenityCount =
+            await amenities.CountAsync();
+
+        Console.WriteLine(
+            $"Amenities found: {amenityCount}");
+
+        for (int i = 0; i < amenityCount; i++)
         {
-            return false;
+            var amenity =
+                amenities.Nth(i);
+
+            string amenityText =
+                (await amenity.InnerTextAsync())
+                .Trim();
+
+            if (amenityText.Equals(
+                    "Parking",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await amenity
+                    .ScrollIntoViewIfNeededAsync();
+
+                Console.WriteLine(
+                    "Parking amenity found: True");
+
+                return true;
+            }
         }
 
-        var parkingAmenity =
-            amenitiesList.GetByText(
-                "Parking",
-                new() { Exact = true });
+        Console.WriteLine(
+            "Parking amenity found: False");
 
-        return await parkingAmenity.CountAsync() > 0;
+        return false;
     }
 }

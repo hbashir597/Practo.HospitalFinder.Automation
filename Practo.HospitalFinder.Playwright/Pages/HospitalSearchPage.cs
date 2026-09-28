@@ -8,6 +8,9 @@ public class HospitalSearchPage
 {
     private readonly IPage _page;
 
+    private const string HospitalCardsSelector =
+        ".c-estb-card";
+
     public HospitalSearchPage(IPage page)
     {
         _page = page;
@@ -16,22 +19,58 @@ public class HospitalSearchPage
     public async Task NavigateToBangaloreHospitalsAsync()
     {
         await _page.GotoAsync(
-            "https://www.practo.com/bangalore/hospitals");
+            "https://www.practo.com/bangalore/hospitals",
+            new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded,
+                Timeout = 30000
+            });
+
+        Console.WriteLine(
+            $"Loaded URL: {_page.Url}");
+
+        Console.WriteLine(
+            $"Loaded title: {await _page.TitleAsync()}");
+
+        // Practo can occasionally return a challenge page
+        // instead of the requested hospital listing.
+        if ((await _page.TitleAsync())
+            .Contains(
+                "Challenge Validation",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Practo returned its Challenge Validation page " +
+                "instead of the Bangalore hospital listing.");
+        }
+
+        // Wait for the actual hospital listing rather than
+        // querying the DOM immediately after navigation.
+        await _page
+            .Locator(HospitalCardsSelector)
+            .First
+            .WaitForAsync(
+                new LocatorWaitForOptions
+                {
+                    State = WaitForSelectorState.Visible,
+                    Timeout = 20000
+                });
     }
 
     public async Task<int> GetHospitalCountAsync()
     {
         return await _page
-            .Locator(".c-estb-card")
+            .Locator(HospitalCardsSelector)
             .CountAsync();
     }
 
     public async Task<List<HospitalResult>> GetHospitalResultsAsync()
     {
-        var results = new List<HospitalResult>();
+        var results =
+            new List<HospitalResult>();
 
         var hospitalCards =
-            _page.Locator(".c-estb-card");
+            _page.Locator(HospitalCardsSelector);
 
         int count =
             await hospitalCards.CountAsync();
@@ -51,18 +90,25 @@ public class HospitalSearchPage
             }
 
             string name =
-                (await nameLocator.InnerTextAsync()).Trim();
+                (await nameLocator
+                    .InnerTextAsync())
+                .Trim();
 
             // Hospital locality
-            string location = string.Empty;
+            string location =
+                string.Empty;
 
             var locationLocator =
-                card.Locator(".c-locality-info > span").First;
+                card
+                    .Locator(".c-locality-info > span")
+                    .First;
 
             if (await locationLocator.CountAsync() > 0)
             {
                 location =
-                    (await locationLocator.InnerTextAsync()).Trim();
+                    (await locationLocator
+                        .InnerTextAsync())
+                    .Trim();
             }
 
             // Open 24x7 status
@@ -70,11 +116,15 @@ public class HospitalSearchPage
                 await card
                     .GetByText(
                         "Open 24x7",
-                        new() { Exact = true })
+                        new()
+                        {
+                            Exact = true
+                        })
                     .CountAsync() > 0;
 
             // Hospital rating
-            double? rating = null;
+            double? rating =
+                null;
 
             var ratingLocator =
                 card.Locator(
@@ -94,7 +144,8 @@ public class HospitalSearchPage
                     CultureInfo.InvariantCulture,
                     out double parsedRating))
                 {
-                    rating = parsedRating;
+                    rating =
+                        parsedRating;
                 }
             }
 
@@ -115,7 +166,6 @@ public class HospitalSearchPage
                     ?? string.Empty;
             }
 
-            // Store extracted hospital information
             results.Add(
                 new HospitalResult
                 {
@@ -130,7 +180,8 @@ public class HospitalSearchPage
         return results;
     }
 
-    public async Task<List<HospitalResult>> GetCandidateHospitalsAsync()
+    public async Task<List<HospitalResult>>
+        GetCandidateHospitalsAsync()
     {
         var hospitals =
             await GetHospitalResultsAsync();
@@ -143,11 +194,12 @@ public class HospitalSearchPage
             .ToList();
     }
 
-    public async Task<IPage> OpenHospitalDetailsInNewTabAsync(
-        HospitalResult hospital)
+    public async Task<IPage>
+        OpenHospitalDetailsInNewTabAsync(
+            HospitalResult hospital)
     {
         var hospitalCards =
-            _page.Locator(".c-estb-card");
+            _page.Locator(HospitalCardsSelector);
 
         int count =
             await hospitalCards.CountAsync();
@@ -168,7 +220,8 @@ public class HospitalSearchPage
             }
 
             string linkUrl =
-                await detailsLink.GetAttributeAsync("href")
+                await detailsLink
+                    .GetAttributeAsync("href")
                 ?? string.Empty;
 
             if (linkUrl != hospital.DetailsUrl)
@@ -177,20 +230,24 @@ public class HospitalSearchPage
             }
 
             var detailsPage =
-                await _page.Context.RunAndWaitForPageAsync(
-                    async () =>
-                    {
-                        await detailsLink.ClickAsync();
-                    });
+                await _page.Context
+                    .RunAndWaitForPageAsync(
+                        async () =>
+                        {
+                            await detailsLink
+                                .ClickAsync();
+                        });
 
-            await detailsPage.WaitForLoadStateAsync(
-                LoadState.DOMContentLoaded);
+            await detailsPage
+                .WaitForLoadStateAsync(
+                    LoadState.DOMContentLoaded);
 
             return detailsPage;
         }
 
         throw new InvalidOperationException(
             $"Could not find the hospital card for " +
-            $"'{hospital.Name}' in '{hospital.Location}'.");
+            $"'{hospital.Name}' in " +
+            $"'{hospital.Location}'.");
     }
 }
