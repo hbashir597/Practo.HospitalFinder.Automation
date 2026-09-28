@@ -24,6 +24,7 @@ The main Hospital Finder scenario identifies hospitals in Bangalore that meet th
 - Page Object Model
 - Extent Reports
 - Allure
+- Serilog
 - Docker
 - Selenium Grid
 - noVNC
@@ -41,6 +42,7 @@ The framework uses:
 - Screenshots on test failure.
 - Extent reporting.
 - Allure reporting.
+- Serilog file logging.
 - Local and remote Selenium execution.
 
 ## Hospital Finder Scenario
@@ -155,7 +157,7 @@ Stop and remove the Compose container and network with:
 docker compose down
 ```
 
-## Reporting and Evidence
+## Reporting, Logging and Evidence
 
 The Selenium BDD framework provides:
 
@@ -163,9 +165,12 @@ The Selenium BDD framework provides:
 - Extent HTML reporting.
 - Allure reporting.
 - Failure screenshots.
+- Serilog execution logs.
 - BDD scenario output.
 - Selenium Grid execution.
 - noVNC visual evidence of the remote browser session.
+
+Serilog is integrated into the Selenium BDD framework to provide additional execution logging and support troubleshooting and test evidence.
 
 ## Current Status
 
@@ -174,3 +179,5 @@ The Selenium BDD framework is operational with both local and Docker-based brows
 The Hospital Finder scenario successfully extracts hospital information and validates the required criteria using Selenium, Reqnroll and NUnit.
 
 Docker and Selenium Grid integration has also been successfully verified using the real Hospital Finder UI scenario.
+
+Reporting, failure evidence and Serilog logging are integrated into the completed framework.
